@@ -14,7 +14,7 @@ void * safemalloc(size_t size)
     void* ptr = malloc(size);
     if(ptr == NULL)
     {
-        printf("Failed to allocate memory. Exiting application.");
+        printf("Failed to allocate memory! Exiting application...");
         exit(EXIT_FAILURE);
     }
     else
@@ -28,7 +28,7 @@ void * safecalloc(size_t num, size_t size)
     void* ptr = calloc(num, size);
     if(ptr == NULL)
     {
-        printf("Failed to allocate memory. Exiting application.");
+        printf("Failed to allocate memory! Exiting application...");
         exit(EXIT_FAILURE);
     }
     else
@@ -42,7 +42,7 @@ void * saferealloc(void *ptr, size_t size)
     void* newptr = realloc(ptr, size);
     if(newptr == NULL)
     {
-        printf("Failed to allocate memory. Exiting application.");
+        printf("Failed to allocate memory! Exiting application...");
         exit(EXIT_FAILURE);
     }
     else
