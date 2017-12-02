@@ -3,6 +3,7 @@
  *
  * contributor(s):
  *      Nate Mathews, njm3308@rit.edu
+ *      Patrick Ly, pxl7219@g.rit.edu
  **/
 
 #include <glob.h>
