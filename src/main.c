@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "simulation.h"
+#include "display.h"
 
 #define USAGE "Usage: %s [-lbke]\n"
 
@@ -32,6 +33,9 @@ int main(int argc, char* argv[])
                 exit(EXIT_FAILURE);
         }
     }
+
+    printf("Clear didn't work :(");
+    clear();
 
     // run the simulation and return it's exit code
     return run(l, b, k, e);
