@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "simulation.h"
-#include "display.h"
+#include "utils/display.h"
 
 #define USAGE "Usage: %s [-lbke]\n"
 
