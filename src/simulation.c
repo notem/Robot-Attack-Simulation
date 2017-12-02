@@ -34,6 +34,30 @@ Position newPos(size_t l, size_t b, size_t k, Position *occupied) {
     return pos;
 }
 
+/// elect a leader for the robots using the bully algorithm
+Robot elect_leader(Robot* robots) {
+    // TODO
+    return robots[0];
+}
+
+/// do one turn of the exploration stage
+bool explore(Robot* robots, Robot leader) {
+    // TODO
+    return false;
+}
+
+/// do one turn of the exploration stage
+bool transition(Robot* robots, Robot leader) {
+    // TODO
+    return false;
+}
+
+/// do one turn of the exploration stage
+bool attack(Robot* robots, Robot leader) {
+    // TODO
+    return false;
+}
+
 /// run the simulation
 int run(size_t l, size_t b, size_t k, size_t e) {
     assert(l>0 && b>0 && k>0);  // l & b & k must be nonzero
@@ -66,9 +90,34 @@ int run(size_t l, size_t b, size_t k, size_t e) {
     }
 
     /** Begin the simulation loop **/
-    while(true) {
-        // todo
-        break;
+    int* phase = safecalloc(1, sizeof *phase);
+    while(true) {       // each loop is a turn in the simulation
+        if(*phase == 4) break;
+
+        // Elect leader
+        Robot leader = elect_leader(robots);
+        switch (*phase)
+        {
+            case 0:     // exploration phase
+                if(explore(robots, leader)) {
+                    *phase = 1;                     // simulation moves to next stage
+                }
+                break;
+
+            case 1:     // transition phase
+                transition(robots, leader);
+                break;
+
+            case 2:     // attack phase
+                if(attack(robots, leader)) {
+                    *phase = 4;
+                };
+                break;
+
+            default:    // error of some sort?
+                assert(NULL);
+                break;
+        }
     }
 
     /** Free all initialized variables **/
