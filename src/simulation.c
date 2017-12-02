@@ -1,8 +1,14 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <zconf.h>
 #include "simulation.h"
 #include "robot.h"
+#include "utils/display.h"
+
+#define TARGET_CHAR 'T'
+#define GOODBOT_CHAR '+'
+#define BADBOT_CHAR '-'
 
 /// seed the random number generator
 void seed()  {
@@ -38,7 +44,8 @@ Position newPos(size_t l, size_t b, size_t k, Position *occupied) {
 int run(size_t l, size_t b, size_t k, size_t e) {
     assert(l>0 && b>0 && k>0);  // l & b & k must be nonzero
     assert(k > (3*e)+1);        // k must be greater than 3*e+1
-    seed();
+    seed();         // seed random
+    clear();        // clear the screen
 
     /** Initialize target location and robots **/
     // array of positions on the grid which have been taken
@@ -49,6 +56,8 @@ int run(size_t l, size_t b, size_t k, size_t e) {
     Position target  = newPos(l, b, k, occupied);
     occupied[o_size] = target;      // add target pos to occupied list
     o_size++;
+    set_cur_pos(target->x, target->y);
+    put(TARGET_CHAR);
 
     // initialize all robots
     Robot* robots = safemalloc((sizeof *robots) * k);  // space for k pointers
@@ -57,19 +66,27 @@ int run(size_t l, size_t b, size_t k, size_t e) {
         robots[j]        = makeRobot(j, pos, false);
         occupied[o_size] = pos;
         o_size++;
+
+        set_cur_pos(pos->x, pos->y);
+        put(GOODBOT_CHAR);
     }
     for(size_t j=k-e; j<k; j++) {                      // make bad robots
         Position pos     = newPos(l, b, k, occupied);
         robots[j]        = makeRobot(j, pos, true);
         occupied[o_size] = pos;
         o_size++;
+
+        set_cur_pos(pos->x, pos->y);
+        put(BADBOT_CHAR);
     }
 
     /** Begin the simulation loop **/
     while(true) {
         // todo
+        sleep(2);
         break;
     }
+    set_cur_pos(b,l);
 
     /** Free all initialized variables **/
     for(size_t j=0; j<o_size; j++) {
