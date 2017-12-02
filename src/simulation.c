@@ -90,8 +90,11 @@ int run(size_t l, size_t b, size_t k, size_t e) {
     }
 
     /** Begin the simulation loop **/
-    int* phase = safecalloc(1, sizeof *phase);
-    while(true) {       // each loop is a turn in the simulation
+    int* phase     = safemalloc(sizeof *phase);
+    bool* finished = safemalloc(sizeof *finished);
+    *phase    = 0;
+    *finished = false;
+    while(!*finished) {       // each loop is a turn in the simulation
         if(*phase == 4) break;
 
         // Elect leader
@@ -106,11 +109,12 @@ int run(size_t l, size_t b, size_t k, size_t e) {
 
             case 1:     // transition phase
                 transition(robots, leader);
+                *phase = 2;
                 break;
 
             case 2:     // attack phase
                 if(attack(robots, leader)) {
-                    *phase = 4;
+                    *finished = true;
                 };
                 break;
 
