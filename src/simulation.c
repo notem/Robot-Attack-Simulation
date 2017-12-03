@@ -74,26 +74,50 @@ bool explore(Robot* robots, Robot leader, Position target, size_t k, size_t l, s
         }
     }
 
-    // TODO protect against robot collisions
     for (int i = 0; i < k; i++) {
         head:;
         int direction = rand() % 4; // four directions
+        bool safe = true;
         switch (direction) {
             case 0: // up
                 if(robots[i]->self->x >= b-1) goto head;
-                robots[i]->self->x += 1;
+                for (int j = 0; j < k; j++) {
+                    if(j!=i && robots[j]->self->x == robots[i]->self->x+1) {
+                        safe = false;
+                        break;
+                    }
+                }
+                if(safe) robots[i]->self->x += 1;
                 break;
             case 1: // down
                 if(robots[i]->self->x <= 0) goto head;
-                robots[i]->self->x -= 1;
+                for (int j = 0; j < k; j++) {
+                    if(j!=i && robots[j]->self->x == robots[i]->self->x-1) {
+                        safe = false;
+                        break;
+                    }
+                }
+                if(safe) robots[i]->self->x -= 1;
                 break;
             case 2: // left
                 if(robots[i]->self->y >= l-1) goto head;
-                robots[i]->self->y += 1;
+                for (int j = 0; j < k; j++) {
+                    if(j!=i && robots[j]->self->y == robots[i]->self->y+1) {
+                        safe = false;
+                        break;
+                    }
+                }
+                if(safe) robots[i]->self->y += 1;
                 break;
             case 3: // right
                 if(robots[i]->self->y <= 0) goto head;
-                robots[i]->self->y -= 1;
+                for (int j = 0; j < k; j++) {
+                    if(j!=i && robots[j]->self->y == robots[i]->self->y-1) {
+                        safe = false;
+                        break;
+                    }
+                }
+                if(safe) robots[i]->self->y -= 1;
                 break;
             default:// madness?
                 assert(NULL);
@@ -193,7 +217,7 @@ int run(size_t l, size_t b, size_t k, size_t e) {
         }
 
         /* block until user presses enter */
-        printf("Hit [ENTER] to continue to next turn: ");
+        printf("Hit [ENTER] to continue, or (q)uit: ");
         char* input = NULL; size_t size;
         getline(&input, &size, stdin);
         if(input[0]=='q' || input=="quit") *phase = -1;
