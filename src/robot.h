@@ -6,8 +6,8 @@
 #include "utils/safemalloc.h"
 
 typedef struct pos {
-    size_t x;
-    size_t y;
+    int x;
+    int y;
 } *Position;
 
 typedef struct robot {
