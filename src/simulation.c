@@ -1,9 +1,9 @@
 #include <stdlib.h>
-#include <fcntl.h>
 #include <assert.h>
 #include <stdio.h>
 #include "simulation.h"
 #include "robot.h"
+#include "utils/display.h"
 
 /// seed the random number generator
 void seed()  {
@@ -127,7 +127,8 @@ bool attack(Robot* robots, Robot leader) {
 int run(size_t l, size_t b, size_t k, size_t e) {
     assert(l>0 && b>0 && k>0);  // l & b & k must be nonzero
     assert(k > (3*e)+1);        // k must be greater than 3*e+1
-    seed();
+    assert(k < l*b);            // k must be less than the total number of free spaces
+    seed();             // seed random
 
     /** Initialize target location and robots **/
     // array of positions on the grid which have been taken
@@ -155,12 +156,13 @@ int run(size_t l, size_t b, size_t k, size_t e) {
         o_size++;
     }
 
+    // set the initial display setup
+    update_display(l, b, k, 0, 0, robots, target);
+
     /** Begin the simulation loop **/
     int* phase = safecalloc(1, sizeof *phase);
-    int temp = 0;
-    while(true) {       // each loop is a turn in the simulation
-        if(*phase == 4) break;
-
+    int round  = 1;
+    while(*phase >= 0) {    // each loop is a turn in the simulation
         // Elect leader
         Robot leader = elect_leader(robots, k);
         switch (*phase)
@@ -182,7 +184,7 @@ int run(size_t l, size_t b, size_t k, size_t e) {
 
             case 2:     // attack phase
                 if(attack(robots, leader)) {
-                    *phase = 4;
+                    *phase = -1; // simulation done
                 };
                 break;
 
@@ -191,9 +193,20 @@ int run(size_t l, size_t b, size_t k, size_t e) {
                 break;
         }
 
-        temp++;
-        if (temp == 10) {
-        *phase = 4;}
+
+        /* block until user presses enter */
+        printf("Hit [ENTER] to continue to next turn: ");
+        char* tmp = NULL; size_t size;
+        getline(&tmp, &size, stdin);
+        free(tmp);
+
+        // update display for the next turn
+        update_display(l, b, k, 0, round++, robots, target);
+
+        // TODO remove after testing
+        if (round == 11) {
+            *phase = -1;
+        }
     }
 
     /** Free all initialized variables **/
