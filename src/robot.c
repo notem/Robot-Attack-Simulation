@@ -7,6 +7,7 @@ Robot makeRobot(size_t ID, Position pos, bool malicious) {
     rob->ID        = ID;
     rob->self      = pos;
     rob->target    = NULL;
+    rob->assignment = NULL;
     rob->malicious = malicious;
     return rob;
 }

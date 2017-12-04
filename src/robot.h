@@ -14,6 +14,7 @@ typedef struct robot {
     size_t ID;
     Position self;
     Position target;
+    Position assignment;
     bool malicious;
 } *Robot;
 
