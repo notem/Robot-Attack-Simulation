@@ -79,7 +79,7 @@ bool explore(Robot* robots, Robot leader, Position target, size_t k, size_t l, s
     /* each robot wanders in a random direction
        if the chosen direction is towards the edge of the simulation, try a new postion
        if the chosen direction is towards another robot, stay in place  */
-    // TODO do smart explore
+    // TODO do smart explore of the undiscovered positions
     for (int i = 0; i < k; i++) {
         head:;
         int direction = rand() % 4; // four directions
@@ -203,6 +203,8 @@ bool attack(Robot* robots, Robot leader, size_t k, Position* objects, size_t o_s
     }
 
     // each robots calculates the shortest path to the target and moves forward one position
+    // TODO insure that the inner-layer of robots reaches their assignments before the outer-layer
+    // TODO.. to insure robots are not blocked from reaching their assignments
     for (int i = 0; i < k; i++) {
         if (robots[i]->self->x != robots[i]->assignment->x
             || robots[i]->self->y != robots[i]->assignment->y) {
@@ -227,9 +229,9 @@ bool attack(Robot* robots, Robot leader, size_t k, Position* objects, size_t o_s
 /// @returns the simulation's exit code
 int run(size_t l, size_t b, size_t k, size_t e, long s) {
     assert(l>0 && b>0 && k>0);  // l & b & k must be nonzero
-    assert(k > (3*e)+1 || k==1);        // k must be greater than 3*e+1
+    assert(k > (3*e)+1 || k==1);// k must be greater than 3*e+1
     assert(k < l*b);            // k must be less than the total number of free spaces
-    seed(s);             // seed random
+    seed(s);                    // seed random
 
     /** Initialize target location and robots **/
     // array of positions on the grid which have been taken
