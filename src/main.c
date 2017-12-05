@@ -16,7 +16,11 @@
 
 int main(int argc, char* argv[])
 {
-    /* initialize defaults for l,b,k,e */
+    /* initialize defaults for l,b,k,e
+       l = height of simulation grid
+       b = width of simulation grid
+       k = total number of robots
+       e = number of robots that are evil */
     size_t l=10, b=10, k=4, e=0;
 
     // do argument parsing
