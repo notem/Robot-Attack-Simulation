@@ -1,6 +1,7 @@
 #include "../robot.h"
 
 #include <stdio.h>
+#include <assert.h>
 #include "display.h"
 
 #define TARGET_CHAR 'T'
@@ -17,11 +18,11 @@ void put(char character) {
     fflush(stdout);
 }
 
-void set_cur_pos(int rCursor, int cCursor) {
-    printf("\033[%d;%dH", rCursor, cCursor);
+void set_cur_pos(size_t rCursor, size_t cCursor) {
+    printf("\033[%zu;%zuH", rCursor, cCursor);
 }
 
-///
+/// updates the simulation's terminal display
 void update_display(size_t l, size_t b, size_t k, int phase, int round, Robot *robots, Position target) {
     clear();
 
@@ -62,6 +63,9 @@ void update_display(size_t l, size_t b, size_t k, int phase, int round, Robot *r
     /* write out phase */
     set_cur_pos(l+3,0);
     switch(phase) {
+        case -1:
+            printf("Finished simulation on round %d!", round);
+            break;
         case 0:
             printf("Exploration phase, round %d:\n", round);
             break;
@@ -70,6 +74,9 @@ void update_display(size_t l, size_t b, size_t k, int phase, int round, Robot *r
             break;
         case 2:
             printf("Attack phase, round %d:\n", round);
+            break;
+        default: // panic!
+            assert(NULL);
             break;
     }
     set_cur_pos(l+4,0);

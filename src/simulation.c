@@ -7,9 +7,9 @@
 #include "pathfinding.h"
 
 /// seed the random number generator
-void seed()  {
+void seed(long seed)  {
     // get a true random number
-    srand(1); // seed rand
+    srand(seed); // seed rand
 }
 
 /// Broadcast target location to all other robots
@@ -45,7 +45,7 @@ Position newPos(size_t l, size_t b, size_t k, Position *occupied) {
 Robot elect_leader(Robot* robots, size_t k) {
     // Select random robot from list
     int leadIndex = (int) (rand() % k);
-    printf("Leader is %d\n", leadIndex);
+    printf("  Leader is %d\n", leadIndex);
     // Choose that as the leader
     return robots[leadIndex];
 }
@@ -54,9 +54,9 @@ Robot elect_leader(Robot* robots, size_t k) {
 /// @returns true if the exploration stage has completed
 bool explore(Robot* robots, Robot leader, Position target, size_t k, size_t l, size_t b) {
     // For each robot, check if they found the target
-    printf("Target is at (%d, %d)\n", target->x, target->y);
+    printf("  Target is at (%d, %d)\n", target->x, target->y);
     for (int i = 0; i < k; i++) {
-        printf("Robot %d is at (%d, %d)\n", i, robots[i]->self->x, robots[i]->self->y);
+        printf("  Robot %d is at (%d, %d)\n", i, robots[i]->self->x, robots[i]->self->y);
 
         // if the robot is within 1 tile of the target, robot 'sees' the target
         if (abs(robots[i]->self->x - target->x) <= 1 &&
@@ -79,13 +79,14 @@ bool explore(Robot* robots, Robot leader, Position target, size_t k, size_t l, s
     /* each robot wanders in a random direction
        if the chosen direction is towards the edge of the simulation, try a new postion
        if the chosen direction is towards another robot, stay in place  */
+    // TODO do smart explore
     for (int i = 0; i < k; i++) {
         head:;
         int direction = rand() % 4; // four directions
         bool safe = true;
         switch (direction) {
             case 0: // up
-                if(robots[i]->self->x >= b) goto head;
+                if(robots[i]->self->x >= b-1) goto head;
                 for (int j = 0; j < k; j++) {
                     if(j!=i && robots[j]->self->x == robots[i]->self->x+1) {
                         safe = false;
@@ -105,7 +106,7 @@ bool explore(Robot* robots, Robot leader, Position target, size_t k, size_t l, s
                 if(safe) robots[i]->self->x -= 1;
                 break;
             case 2: // left
-                if(robots[i]->self->y >= l) goto head;
+                if(robots[i]->self->y >= l-1) goto head;
                 for (int j = 0; j < k; j++) {
                     if(j!=i && robots[j]->self->y == robots[i]->self->y+1) {
                         safe = false;
@@ -135,14 +136,15 @@ bool explore(Robot* robots, Robot leader, Position target, size_t k, size_t l, s
 /// do one turn of the exploration stage
 /// @returns void
 void transition(Robot* robots, Robot leader, size_t k) {
-    // TESTING: See if all robots have same target
+    // print out robot's targets
     for (int i = 0; i < k; i++) {
-        printf("Robot %d's target is (%d, %d)\n", i,
+        printf("  Robot %d believes that the target is at (%d, %d)\n", i,
                robots[i]->target->x, robots[i]->target->y);
     }
 
     // assign positions around the target for each robot
-    // choices are based on ID of robot rather than optimal path lengths TODO use shortest path for decision making
+    // choices are based on ID of robot rather than optimal path lengths
+    // TODO use shortest path for coordinated decision making
     for (int j=0; j<k; j++) {
         int l = (j/8)+1;   // layer around target
         robots[j]->assignment = malloc(sizeof *(robots[j]->assignment));
@@ -187,7 +189,7 @@ void transition(Robot* robots, Robot leader, size_t k) {
 
     // print out assignments for each robot
     for (int i = 0; i < k; i++) {
-        printf("Robot %d's assigned spot is (%d, %d)\n", i,
+        printf("  Robot %d's assigned spot is (%d, %d)\n", i,
                robots[i]->assignment->x, robots[i]->assignment->y);
     }
 }
@@ -195,10 +197,11 @@ void transition(Robot* robots, Robot leader, size_t k) {
 /// do one turn of the attack stage
 /// @returns true if the attack stage has completed
 bool attack(Robot* robots, Robot leader, size_t k, Position* objects, size_t o_size, size_t l, size_t b) {
-    // print out assignments for each robot
+    // print robot positions
     for (int i = 0; i < k; i++) {
-        printf("Robot %d with assignment (%d,%d) is at (%d, %d)\n", i,robots[i]->assignment->x,robots[i]->assignment->y, robots[i]->self->x, robots[i]->self->y);
+        printf("  Robot %d is at (%d, %d)\n", i, robots[i]->self->x, robots[i]->self->y);
     }
+
     // each robots calculates the shortest path to the target and moves forward one position
     for (int i = 0; i < k; i++) {
         if (robots[i]->self->x != robots[i]->assignment->x
@@ -222,15 +225,15 @@ bool attack(Robot* robots, Robot leader, size_t k, Position* objects, size_t o_s
 
 /// run the simulation
 /// @returns the simulation's exit code
-int run(size_t l, size_t b, size_t k, size_t e) {
+int run(size_t l, size_t b, size_t k, size_t e, long s) {
     assert(l>0 && b>0 && k>0);  // l & b & k must be nonzero
     assert(k > (3*e)+1 || k==1);        // k must be greater than 3*e+1
     assert(k < l*b);            // k must be less than the total number of free spaces
-    seed();             // seed random
+    seed(s);             // seed random
 
     /** Initialize target location and robots **/
     // array of positions on the grid which have been taken
-    Position *objects = safecalloc(sizeof *objects, k);
+    Position *objects = safecalloc(sizeof *objects, k+1);
     size_t o_size      = 0;
 
     // determine position for the target
@@ -242,14 +245,14 @@ int run(size_t l, size_t b, size_t k, size_t e) {
     // initialize all robots
     Robot* robots = safemalloc((sizeof *robots) * k);  // space for k pointers
     for(size_t j=0; j<k-e; j++) {                      // make good robots
-        Position pos     = newPos(l, b, k, objects);
-        robots[j]        = makeRobot(j, pos, false);
+        Position pos    = newPos(l, b, k, objects);
+        robots[j]       = makeRobot(j, pos, false);
         objects[o_size] = pos;
         o_size++;
     }
     for(size_t j=k-e; j<k; j++) {                      // make bad robots
-        Position pos     = newPos(l, b, k, objects);
-        robots[j]        = makeRobot(j, pos, true);
+        Position pos    = newPos(l, b, k, objects);
+        robots[j]       = makeRobot(j, pos, true);
         objects[o_size] = pos;
         o_size++;
     }
@@ -302,14 +305,19 @@ int run(size_t l, size_t b, size_t k, size_t e) {
         update_display(l, b, k, *phase, round++, robots, target);
     }
 
-    /** Free all initialized variables **/
-    for(size_t j=0; j<o_size; j++) {
-        free(objects[j]);
+    // print robot positions
+    printf("Final positions of robots:\n");
+    for (int i = 0; i < k; i++) {
+        printf("  Robot %d is at (%d, %d)\n", i, robots[i]->self->x, robots[i]->self->y);
     }
-    free(objects);
+
+    /** Free all initialized variables **/
+    free(phase);
+    free(target);
     for(size_t j=0; j<k; j++) {
-        free(robots[j]);
+        freeRobot(robots[j]);
     }
     free(robots);
+    free(objects);
     return EXIT_SUCCESS;
 }

@@ -11,3 +11,14 @@ Robot makeRobot(size_t ID, Position pos, bool malicious) {
     rob->malicious = malicious;
     return rob;
 }
+
+
+void freeRobot(Robot robot) {
+    if(robot->self != NULL) {
+        free(robot->self);
+    }
+    if(robot->assignment != NULL) {
+        free(robot->assignment);
+    }
+    free(robot);
+}

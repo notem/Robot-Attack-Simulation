@@ -20,4 +20,6 @@ typedef struct robot {
 
 Robot makeRobot(size_t ID, Position pos, bool malicious);
 
+void freeRobot(Robot robot);
+
 #endif //CSCI251_PROJECT3_ROBOT_H
