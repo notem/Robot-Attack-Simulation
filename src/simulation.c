@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include "simulation.h"
 #include "utils/display.h"
-#include "pathfinding.h"
 
 /// seed the random number generator
 void seed(long seed)  {
@@ -51,7 +50,7 @@ Robot elect_leader(Robot* robots, size_t k) {
 
 /// do one turn of the exploration stage
 /// @returns true if the exploration stage has completed
-bool explore(Robot* robots, Robot leader, Position target, size_t k, size_t l, size_t b) {
+bool explore(Robot* robots, Robot leader, Position target, size_t k, Position* objects, size_t o_size, size_t l, size_t b) {
     // For each robot, check if they found the target
     printf("  Target is at (%d, %d)\n", target->x, target->y);
     for (int i = 0; i < k; i++) {
@@ -92,7 +91,7 @@ bool explore(Robot* robots, Robot leader, Position target, size_t k, size_t l, s
                         break;
                     }
                 }
-                if(safe) robots[i]->self->x += 1;
+                if(safe) robots[i]->receive_buffer->x = robots[i]->self->x+1;
                 break;
             case 1: // down
                 if(robots[i]->self->x <= 0) goto head;
@@ -102,7 +101,7 @@ bool explore(Robot* robots, Robot leader, Position target, size_t k, size_t l, s
                         break;
                     }
                 }
-                if(safe) robots[i]->self->x -= 1;
+                if(safe) robots[i]->receive_buffer->x = robots[i]->self->x-1;
                 break;
             case 2: // left
                 if(robots[i]->self->y >= l-1) goto head;
@@ -112,7 +111,7 @@ bool explore(Robot* robots, Robot leader, Position target, size_t k, size_t l, s
                         break;
                     }
                 }
-                if(safe) robots[i]->self->y += 1;
+                if(safe) robots[i]->receive_buffer->y = robots[i]->self->y+1;
                 break;
             case 3: // right
                 if(robots[i]->self->y <= 0) goto head;
@@ -122,13 +121,18 @@ bool explore(Robot* robots, Robot leader, Position target, size_t k, size_t l, s
                         break;
                     }
                 }
-                if(safe) robots[i]->self->y -= 1;
+                if(safe) robots[i]->receive_buffer->y = robots[i]->self->y-1;
                 break;
             default:// madness?
                 assert(NULL);
                 break;
         }
     }
+
+    // leader tells robots which position they should move to next
+    directMovement(leader, robots, k, objects, o_size, l, b);
+    moveRobots(robots, k);
+
     return false;
 }
 
@@ -162,18 +166,11 @@ bool attack(Robot* robots, Robot leader, size_t k, Position* objects, size_t o_s
         printf("  Robot %d is at (%d, %d)\n", i, robots[i]->self->x, robots[i]->self->y);
     }
 
-    // each robots calculates the shortest path to the target and moves forward one position
-    // TODO insure that the inner-layer of robots reaches their assignments before the outer-layer
-    // TODO.. to insure robots are not blocked from reaching their assignments
-    for (int i = 0; i < k; i++) {
-        if (robots[i]->self->x != robots[i]->assignment->x
-            || robots[i]->self->y != robots[i]->assignment->y) {
-            Position pos = shortest_path(objects, o_size, robots[i]->self, robots[i]->assignment, l, b);
-            robots[i]->self->x = pos->x;
-            robots[i]->self->y = pos->y;
-            free(pos);
-        }
-    }
+    // leader tells robots which position they should move to next
+    directMovement(leader, robots, k, objects, o_size, l, b);
+
+    // robots move to their positions in parallel
+    moveRobots(robots, k);
 
     // check if robots are in their assigned positions
     for (int i = 0; i < k; i++) {
@@ -224,18 +221,19 @@ int run(size_t l, size_t b, size_t k, size_t e, long s) {
 
     /** Begin the simulation loop **/
     int* phase = safecalloc(1, sizeof *phase);
-    int round  = 1;
+    int round  = 0;
     while(*phase >= 0) {    // each loop is a turn in the simulation
         // Elect leader
         Robot leader = elect_leader(robots, k);
         switch (*phase)
         {
             case 0:     // exploration phase
-                if (explore(robots, leader, target, k, l, b)) {
+                if (explore(robots, leader, target, k, objects, o_size, l, b)) {
                     *phase = 1; // simulation moves to transition/position assignment phase
                     printf("Entering transition phase...\n");
                     printf("==============\n");
                 }
+                round++;
                 break;
 
             case 1:     // transition phase
@@ -249,6 +247,7 @@ int run(size_t l, size_t b, size_t k, size_t e, long s) {
                 if (attack(robots, leader, k, objects, o_size, l, b)) {
                     *phase = -1; // simulation done
                 };
+                round++;
                 break;
 
             default:    // error of some sort?
@@ -264,7 +263,7 @@ int run(size_t l, size_t b, size_t k, size_t e, long s) {
         free(input);
 
         // update display for the next turn
-        update_display(l, b, k, *phase, round++, robots, target);
+        update_display(l, b, k, *phase, round, robots, target);
     }
 
     // print robot positions
