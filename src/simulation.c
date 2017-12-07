@@ -2,7 +2,6 @@
 #include <assert.h>
 #include <stdio.h>
 #include "simulation.h"
-#include "robot.h"
 #include "utils/display.h"
 #include "pathfinding.h"
 
@@ -22,7 +21,7 @@ void broadcastTarget(Robot sender, Robot* robots, size_t k) {
 }
 
 /// generate a random position available on the simulation grid
-Position newPos(size_t l, size_t b, size_t k, Position *occupied) {
+Position newPos(size_t l, size_t b, size_t k, Position* objects) {
     Position pos = safemalloc(sizeof *pos);
     pos->x = (int) (rand() % b);
     pos->y = (int) (rand() % l);
@@ -30,12 +29,12 @@ Position newPos(size_t l, size_t b, size_t k, Position *occupied) {
     // make sure that the new coordinate is not already occupied
     for(size_t j=0; j<k; j++) {
         // exhausted occupied list
-        if (occupied[j]==NULL) {
+        if (objects[j]==NULL) {
             break;
         } // found collision
-        else if ((occupied[j]->x==pos->x) && (occupied[j]->y==pos->y)) {
-            free(pos);                         // free the old position
-            pos = newPos(l, b, k, occupied);   // try again with new position
+        else if ((objects[j]->x==pos->x) && (objects[j]->y==pos->y)) {
+            free(pos);                        // free the old position
+            pos = newPos(l, b, k, objects);   // try again with new position
         }
     }
     return pos;
@@ -135,7 +134,7 @@ bool explore(Robot* robots, Robot leader, Position target, size_t k, size_t l, s
 
 /// do one turn of the exploration stage
 /// @returns void
-void transition(Robot* robots, Robot leader, size_t k) {
+void transition(Robot* robots, Robot leader, size_t k, Position* objects, size_t o_size, size_t l, size_t b) {
     // print out robot's targets
     for (int i = 0; i < k; i++) {
         printf("  Robot %d believes that the target is at (%d, %d)\n", i,
@@ -144,53 +143,14 @@ void transition(Robot* robots, Robot leader, size_t k) {
 
     // assign positions around the target for each robot
     // choices are based on ID of robot rather than optimal path lengths
-    // TODO use shortest path for coordinated decision making
-    for (int j=0; j<k; j++) {
-        int l = (j/8)+1;   // layer around target
-        robots[j]->assignment = malloc(sizeof *(robots[j]->assignment));
-        switch (j%8) {
-            case 0:
-                robots[j]->assignment->x = robots[j]->target->x;
-                robots[j]->assignment->y = robots[j]->target->y+l;
-                break;
-            case 1:
-                robots[j]->assignment->x = robots[j]->target->x+l;
-                robots[j]->assignment->y = robots[j]->target->y;
-                break;
-            case 2:
-                robots[j]->assignment->x = robots[j]->target->x;
-                robots[j]->assignment->y = robots[j]->target->y-l;
-                break;
-            case 3:
-                robots[j]->assignment->x = robots[j]->target->x-l;
-                robots[j]->assignment->y = robots[j]->target->y;
-                break;
-            case 4:
-                robots[j]->assignment->x = robots[j]->target->x+l;
-                robots[j]->assignment->y = robots[j]->target->y+l;
-                break;
-            case 5:
-                robots[j]->assignment->x = robots[j]->target->x+l;
-                robots[j]->assignment->y = robots[j]->target->y-l;
-                break;
-            case 6:
-                robots[j]->assignment->x = robots[j]->target->x-l;
-                robots[j]->assignment->y = robots[j]->target->y-l;
-                break;
-            case 7:
-                robots[j]->assignment->x = robots[j]->target->x-l;
-                robots[j]->assignment->y = robots[j]->target->y+l;
-                break;
-            default: // panic!
-                assert(NULL);
-                break;
-        }
-    }
+    assignPositions(leader, robots, k, objects, o_size, l, b);
 
     // print out assignments for each robot
     for (int i = 0; i < k; i++) {
-        printf("  Robot %d's assigned spot is (%d, %d)\n", i,
-               robots[i]->assignment->x, robots[i]->assignment->y);
+        if(robots[i]->assignment != NULL) {
+            printf("  Robot %d's assigned spot is (%d, %d)\n", i,
+                   robots[i]->assignment->x, robots[i]->assignment->y);
+        }
     }
 }
 
@@ -235,8 +195,8 @@ int run(size_t l, size_t b, size_t k, size_t e, long s) {
 
     /** Initialize target location and robots **/
     // array of positions on the grid which have been taken
-    Position *objects = safecalloc(sizeof *objects, k+1);
-    size_t o_size      = 0;
+    Position* objects = safecalloc(sizeof *(objects), k+1);
+    size_t o_size  = 0;
 
     // determine position for the target
     Position target  = newPos(l, b, k, objects);
@@ -279,7 +239,7 @@ int run(size_t l, size_t b, size_t k, size_t e, long s) {
                 break;
 
             case 1:     // transition phase
-                transition(robots, leader, k);
+                transition(robots, leader, k, objects, o_size, l, b);
                 *phase = 2; // simulation moves to the attack phase
                 printf("Entering attack phase...\n");
                 printf("==============\n");

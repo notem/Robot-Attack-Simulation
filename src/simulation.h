@@ -1,7 +1,8 @@
-#include <glob.h>
-
 #ifndef CSCI251_PROJECT3_SIMULATION_H
 #define CSCI251_PROJECT3_SIMULATION_H
+
+#include <glob.h>
+#include "robot.h"
 
 /// runs the robot-attack simulation on a grid of size {l}x{b} with {k} robots and {e} malicious robots
 /// @param l height dimension of the simulation grid
