@@ -6,20 +6,29 @@
 #include "pathfinding.h"
 
 /// initialize a robot
-Robot makeRobot(size_t ID, Position pos, bool malicious) {
+Robot makeRobot(size_t ID, Position pos, bool malicious, size_t l, size_t b) {
     Robot rob = safemalloc(sizeof *rob);
-    rob->ID        = ID;
-    rob->self      = pos;
-    rob->target    = NULL;
-    rob->assignment= NULL;
-    rob->malicious = malicious;
+    rob->ID             = ID;
+    rob->self           = pos;
+    rob->target         = NULL;
+    rob->assignment     = NULL;
+    rob->malicious      = malicious;
     rob->receive_buffer = malloc(sizeof *(rob->receive_buffer));
     rob->send_buffer    = malloc(sizeof *(rob->send_buffer));
+
+    /* initialize the explore mapping */
+    rob->explored = safemalloc(sizeof *(rob->explored) * b);
+    for (int x=0;x<b;x++) {
+        rob->explored[x] = calloc(sizeof *(rob->explored), l);
+        for (int y=0;y<l;y++) {
+            rob->explored[x][y] = false;
+        }
+    }
     return rob;
 }
 
 /// free memory locations associated with a robot
-void freeRobot(Robot robot) {
+void freeRobot(Robot robot, size_t l, size_t b) {
     if(robot->self != NULL) {
         free(robot->self);
     }
@@ -28,6 +37,10 @@ void freeRobot(Robot robot) {
     }
     free(robot->receive_buffer);
     free(robot->send_buffer);
+    for (int x=0;x<b;x++) {
+        free(robot->explored[x]);
+    }
+    free(robot->explored);
     free(robot);
 }
 
@@ -136,17 +149,83 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
     }
 }
 
-void directMovement(Robot leader, Robot* robots, size_t k, Position* objects, size_t o_size, size_t l, size_t b) {
-    if(leader->assignment == NULL) {    // during the exploration phase
-        // todo smart searching algorithm
-    } else {                            // during the attack phase
-        // create temporary array of all logical positions to avoid collisions
-        Position* next_positions = safemalloc(k*(sizeof *next_positions)+1);
-        for (int i = 0; i < k; i++) {
-            next_positions[i] = safemalloc(sizeof **next_positions);
-            next_positions[i]->x = robots[i]->self->x;
-            next_positions[i]->y = robots[i]->self->y;
+/// find the closest unknown position on the grid
+Position getFirstUnknown(Position cur, bool** known, size_t l, size_t b) {
+    int x = cur->x+1;
+    int y = cur->y;
+    int c = 0;             // iteration count
+    int i = 1;             // length of interval
+    bool axis    = false;  // true is x, false is y
+    bool signage = true;   // true is positive, false is negative
+    while (c < l*b*4) {    // while loop is bounded at gridArea*4
+        // check if current grid position has been explored
+        if (x<b && y<l) {
+            if(!known[x][y]) {
+                break;
+            }
         }
+        // move checker to the next position
+        if (axis) {    // x-axis
+            if (signage) { x++; }
+            else         { x--; }
+        } else {       // y-axis
+            if (signage) { y++; }
+            else         { y--; }
+        }
+        // every other interval of the loop switch the axis
+        if (c%(i) == 0) {
+            axis = !axis;
+        }
+        // every other interval of the loop
+        // switch the signage and increase the interval
+        if (c%(i*2) == 0) {
+            signage = !signage;
+            i++;
+        }
+        c++;
+    }
+
+    // create the pos object and return it
+    Position pos = malloc(sizeof *pos);
+    pos->x = x;
+    pos->y = y;
+    return pos;
+}
+
+/// leader robot directs tertiary robots next move
+void directMovement(Robot leader, Robot* robots, size_t k, size_t l, size_t b) {
+
+    // create temporary array of all logical positions to avoid collisions
+    Position* next_positions = safemalloc(k*(sizeof *next_positions)+1);
+    for (int i = 0; i < k; i++) {
+        next_positions[i] = safemalloc(sizeof **next_positions);
+        next_positions[i]->x = robots[i]->self->x;
+        next_positions[i]->y = robots[i]->self->y;
+    }
+
+    // during the exploration phase
+    if(leader->assignment == NULL) {
+        for (int i = 0; i < k; i++) {
+            leader->explored[robots[i]->self->x][robots[i]->self->y] = true;
+            Position unknown = getFirstUnknown(robots[i]->self, leader->explored, l, b);
+            Position pos = shortest_path(next_positions, k, robots[i]->self, unknown, l, b);
+            next_positions[i]->x = pos->x;
+            next_positions[i]->y = pos->y;
+
+            // leader prepares the position to send
+            leader->send_buffer->x = pos->x;
+            leader->send_buffer->y = pos->y;
+
+            // leader tells the robot it's next position
+            robots[i]->receive_buffer->x = leader->send_buffer->x;
+            robots[i]->receive_buffer->y = leader->send_buffer->y;
+
+            free(unknown);
+            free(pos);
+        }
+    }// during the attack phase
+    else {
+        // target is known, add target to object positions
         next_positions[k] = safemalloc(sizeof **next_positions);
         next_positions[k]->x = leader->target->x;
         next_positions[k]->y = leader->target->y;
@@ -156,7 +235,7 @@ void directMovement(Robot leader, Robot* robots, size_t k, Position* objects, si
             if (robots[i]->malicious) {
                 // todo send malicious robots to hell
             } else {
-                Position pos = shortest_path(next_positions, o_size, robots[i]->self, robots[i]->assignment, l, b);
+                Position pos = shortest_path(next_positions, k+1, robots[i]->self, robots[i]->assignment, l, b);
                 next_positions[i]->x = pos->x;
                 next_positions[i]->y = pos->y;
 
