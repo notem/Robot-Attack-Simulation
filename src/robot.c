@@ -83,7 +83,7 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
     }
 
     ////////// this code below /////////////////////
-    /*int phase = 0;
+    int phase = 0;
     int dir = 0;
     int numPos = 0;
     //int layer = 1;  // current layer from the target (when surrounding)
@@ -153,52 +153,13 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
         } else {
             posList[numPos] = assignment;
         }
-    }*/
+    }
     ////// ^ This code ^ //////////
 
     // assign every non-malicious robot a unique position around the target
     for (int j=0; j<k; j++) {
-        int o = (j/8)+1;   // layer around target
-
         // determine next position to assign
-        Position assignment = safemalloc(sizeof *assignment);
-        switch (j%8) {
-            case 0:
-                assignment->x = leader->target->x;
-                assignment->y = leader->target->y+o;
-                break;
-            case 1:
-                assignment->x = leader->target->x+o;
-                assignment->y = leader->target->y;
-                break;
-            case 2:
-                assignment->x = leader->target->x;
-                assignment->y = leader->target->y-o;
-                break;
-            case 3:
-                assignment->x = leader->target->x-o;
-                assignment->y = leader->target->y;
-                break;
-            case 4:
-                assignment->x = leader->target->x+o;
-                assignment->y = leader->target->y+o;
-                break;
-            case 5:
-                assignment->x = leader->target->x+o;
-                assignment->y = leader->target->y-o;
-                break;
-            case 6:
-                assignment->x = leader->target->x-o;
-                assignment->y = leader->target->y-o;
-                break;
-            case 7:
-                assignment->x = leader->target->x-o;
-                assignment->y = leader->target->y+o;
-                break;
-            default: // panic!
-                assert(NULL);
-                break;
-        }
+        Position assignment = posList[j];
 
         // for every robot not yet assigned, award the current assignment
         // to the robot with the shortest path to travel
