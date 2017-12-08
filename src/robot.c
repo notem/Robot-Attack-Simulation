@@ -82,6 +82,80 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
         }
     }
 
+    ////////// this code below /////////////////////
+    /*int phase = 0;
+    int dir = 0;
+    int numPos = 0;
+    //int layer = 1;  // current layer from the target (when surrounding)
+    Position* posList = safemalloc(k * sizeof *posList);
+    while (numPos < k) {
+        int currentNum = numPos;
+        Position assignment = safemalloc(sizeof *assignment);
+        switch (phase) {
+            case 0: // Handles North, South, East and West
+                switch (dir) {
+                    case 0: // North of Target
+                        if (leader->target->y == 0) {
+                            break;
+                        }
+                        assignment->x = leader->target->x;
+                        assignment->y = leader->target->y - 1;
+                        numPos++;
+                        break;
+                    case 1: // South of Target
+                        if (leader->target->y == l - 1) {
+                            break;
+                        }
+                        assignment->x = leader->target->x;
+                        assignment->y = leader->target->y + 1;
+                        numPos++;
+                        break;
+                    case 2: // East of Target
+                        if (leader->target->x == b - 1) {
+                            break;
+                        }
+                        assignment->x = leader->target->x + 1;
+                        assignment->y = leader->target->y;
+                        numPos++;
+                        break;
+                    case 3: // West of Target
+                        phase++;    // Move on to diagonals
+                        dir = 0;    // reset direction
+                        if (leader->target->x == 0) {
+                            break;
+                        }
+                        assignment->x = leader->target->x - 1;
+                        assignment->y = leader->target->y;
+                        numPos++;
+                        break;
+                    default: // oops, something went wrong!
+                        assert(NULL);
+                        break;
+                }
+                break;
+            case 1: // Handles the four corners (NE, SE, NW, SW)
+                printf("Probably don't need this right now");
+                // TODO
+                break;
+            case 2: // Handles the second layer onward if applicable
+                printf("What you doing here?");
+                // TODO
+                break;
+            default: // oops, something went wrong!
+                assert(NULL);
+                break;
+        }
+        dir++;  // move onto next direction
+
+        // check if a new position was made
+        if (currentNum == numPos) {
+            free(assignment);
+        } else {
+            posList[numPos] = assignment;
+        }
+    }*/
+    ////// ^ This code ^ //////////
+
     // assign every non-malicious robot a unique position around the target
     for (int j=0; j<k; j++) {
         int o = (j/8)+1;   // layer around target

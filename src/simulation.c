@@ -93,6 +93,8 @@ bool explore(Robot* robots, Robot leader, Position target, size_t k, Position* o
             printf("Broadcasting location to all robots...\n");
             broadcastTarget(sender, robots, k);
 
+            // The robots verify with all the other robots that they all have the same target
+            printf("Verifying target with all robots...\n");
             verifyTarget(robots, k);
             return true;
         }
