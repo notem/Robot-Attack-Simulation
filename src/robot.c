@@ -13,8 +13,8 @@ Robot makeRobot(size_t ID, Position pos, bool malicious, size_t l, size_t b) {
     rob->target         = NULL;
     rob->assignment     = NULL;
     rob->malicious      = malicious;
-    rob->receive_buffer = malloc(sizeof *(rob->receive_buffer));
-    rob->send_buffer    = malloc(sizeof *(rob->send_buffer));
+    rob->receive_buffer = safemalloc(sizeof *(rob->receive_buffer));
+    rob->send_buffer    = safemalloc(sizeof *(rob->send_buffer));
 
     /* initialize the explore mapping */
     rob->explored = safemalloc(sizeof *(rob->explored) * b);
@@ -56,7 +56,7 @@ void* moveRobot(void* robot_void) {
 
 /// make the robot move to the next position as specified in it's buffer
 void moveRobots(Robot* robots, size_t k) {
-    pthread_t* threadpool = malloc(k * sizeof *threadpool);
+    pthread_t* threadpool = safemalloc(k * sizeof *threadpool);
     for (int i = 0; i < k; i++) {
         int code = pthread_create(&threadpool[i], NULL, &moveRobot, robots[i]);
         if (code) {
@@ -67,6 +67,7 @@ void moveRobots(Robot* robots, size_t k) {
     for (size_t t=0; t < k; t++) {
         pthread_join(threadpool[t], NULL);
     }
+    free(threadpool);
 }
 
 /// leader robot assigns positions for all robots to go to during the attack phase
@@ -74,7 +75,7 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
     // for every malicious robot assign a phony assignment
     for (int x=0; x<k; x++) {
         if (robots[x]->malicious) {
-            robots[x]->assignment = malloc(sizeof *(robots[x]->assignment));
+            robots[x]->assignment = safemalloc(sizeof *(robots[x]->assignment));
             robots[x]->assignment->x = robots[x]->self->x;
             robots[x]->assignment->y = robots[x]->self->y;
         }
@@ -85,7 +86,7 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
         int o = (j/8)+1;   // layer around target
 
         // determine next position to assign
-        Position assignment = malloc(sizeof *assignment);
+        Position assignment = safemalloc(sizeof *assignment);
         switch (j%8) {
             case 0:
                 assignment->x = leader->target->x;
@@ -186,7 +187,7 @@ Position getFirstUnknown(Position cur, bool** known, size_t l, size_t b) {
     }
 
     // create the pos object and return it
-    Position pos = malloc(sizeof *pos);
+    Position pos = safemalloc(sizeof *pos);
     pos->x = x;
     pos->y = y;
     return pos;
@@ -196,7 +197,7 @@ Position getFirstUnknown(Position cur, bool** known, size_t l, size_t b) {
 void directMovement(Robot leader, Robot* robots, size_t k, size_t l, size_t b) {
 
     // create temporary array of all logical positions to avoid collisions
-    Position* next_positions = safemalloc(k*(sizeof *next_positions)+1);
+    Position* next_positions = safemalloc((k+1)*(sizeof *next_positions));
     for (int i = 0; i < k; i++) {
         next_positions[i] = safemalloc(sizeof **next_positions);
         next_positions[i]->x = robots[i]->self->x;
