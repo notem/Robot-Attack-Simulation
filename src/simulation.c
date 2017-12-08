@@ -19,6 +19,30 @@ void broadcastTarget(Robot sender, Robot* robots, size_t k) {
     }
 }
 
+/// All of the robots verify with the leader that they have the correct target
+/// Checks if a robot is evil
+void verifyTarget(Robot* robots, size_t k) {
+    for (int i = 0; i < k; i++) {
+        for (int j = 0; j < k; j++) {
+            if (robots[j] != robots[i]) {
+
+                if (robots[j]->malicious) {
+                    if (robots[i]->malicious) {
+                        printf("Robot %d(m) verified with Robot %d(m)\n", i, j);
+                    } else {
+                        printf("Robot %d found Robot %d to be malicious!\n", i, j);
+                    }
+                } else if (robots[j]->target == robots[i]->target) {
+                    printf("Robot %d verified with Robot %d\n", i, j);
+                } else {
+                    printf("Uh oh, something went wrong!\n");
+                }
+
+            }
+        }
+    }
+}
+
 /// generate a random position available on the simulation grid
 Position newPos(size_t l, size_t b, size_t k, Position* objects) {
     Position pos = safemalloc(sizeof *pos);
@@ -69,7 +93,7 @@ bool explore(Robot* robots, Robot leader, Position target, size_t k, Position* o
             printf("Broadcasting location to all robots...\n");
             broadcastTarget(sender, robots, k);
 
-            // TODO do consensus algorithm to verify target location
+            verifyTarget(robots, k);
             return true;
         }
     }
