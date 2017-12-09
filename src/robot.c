@@ -73,17 +73,54 @@ void moveRobots(Robot* robots, size_t k) {
     free(threadpool);
 }
 
+/// find the closest unknown position on the grid
+Position getFirstUnknown(Position cur, bool** known, size_t l, size_t b) {
+    // (di, dj) is a vector - direction in which we move right now
+    int di = 1; int dj = 0; int segment_length = 1;
+
+    // current position (i, j) and how much of current segment we passed
+    int i = cur->x; int j = cur->y; int segment_passed = 0;
+    for (int k = 0; k < l*b*4; ++k) {
+        if (i<b && j<l) {   // only if the point on spiral is within bounds
+            // if an unknown is found break
+            if(!known[i][j]) {
+                break;
+            }
+        }
+        // make a step, add 'direction' vector (di, dj) to current position (i, j)
+        i += di; j += dj; ++segment_passed;
+        if (segment_passed == segment_length) {
+            segment_passed = 0;
+
+            // 'rotate' directions
+            int buffer = di;
+            di = -dj;
+            dj = buffer;
+            // increase segment length if necessary
+            if (dj == 0) {
+                ++segment_length;
+            }
+        }
+    }
+
+    // create the pos object and return it
+    Position pos = safemalloc(sizeof *pos);
+    pos->x = i;
+    pos->y = j;
+    return pos;
+}
+
 /// leader robot assigns positions for all robots to go to during the attack phase
 void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, size_t o_size, size_t l, size_t b) {
     // for every malicious robot assign a phony assignment
-    int x = (leader->target->x > (b/2) ? 0 : (int) b);
-    int y = (leader->target->y > (l/2) ? 0 : (int) b);
+    int x = (leader->target->x > (b/2) ? 0 : (int) b-1);
+    int y = (leader->target->y > (l/2) ? 0 : (int) l-1);
     int count = 0;
     for (int j=0; j<k; j++) {
         if (robots[j]->malicious) {
             robots[j]->assignment = safemalloc(sizeof *(robots[j]->assignment));
-            robots[j]->assignment->x = y;
-            robots[j]->assignment->y = x;
+            robots[j]->assignment->x = x;
+            robots[j]->assignment->y = y;
 
             // iterate to a new position for next malicious bot
             if ((count++)%2) {
@@ -96,7 +133,16 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
         }
     }
 
-    ////////// this code below /////////////////////
+    // boolean mapping of positions taken
+    bool **filled = safemalloc(l*b*sizeof *filled);
+    for (int i=0;i<b;i++) {
+        filled[i] = calloc(sizeof **filled, l);
+        for (int j=0;j<l;j++) {
+            filled[i][j] = false;
+        }
+    }
+    filled[leader->target->x][leader->target->y] = true;
+
     int phase = 0;
     int dir = 0;
     int numPos = 0;
@@ -189,8 +235,9 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
                 }
                 break;
             case 2: // Handles the second layer onward if applicable
-                //printf("What you doing here?");
-                // TODO
+                free(assignment);
+                assignment = getFirstUnknown(leader->target, filled, l, b);
+                numPos++;
                 break;
             default: // oops, something went wrong!
                 assert(NULL);
@@ -208,6 +255,7 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
             free(assignment);
         } else {
             posList[numPos - 1] = assignment;
+            filled[assignment->x][assignment->y] = true;
         }
     }
     ////// ^ This code ^ //////////
@@ -240,49 +288,13 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
             free(assignment);
         }
     }
-}
 
-/// find the closest unknown position on the grid
-Position getFirstUnknown(Position cur, bool** known, size_t l, size_t b) {
-    int x = cur->x+1;
-    int y = cur->y;
-    int c = 0;             // iteration count
-    int i = 1;             // length of interval
-    bool axis    = false;  // true is x, false is y
-    bool signage = true;   // true is positive, false is negative
-    while (c < l*b*4) {    // while loop is bounded at gridArea*4
-        // check if current grid position has been explored
-        if (x<b && y<l) {
-            if(!known[x][y]) {
-                break;
-            }
-        }
-        // move checker to the next position
-        if (axis) {    // x-axis
-            if (signage) { x++; }
-            else         { x--; }
-        } else {       // y-axis
-            if (signage) { y++; }
-            else         { y--; }
-        }
-        // every other interval of the loop switch the axis
-        if (c%(i) == 0) {
-            axis = !axis;
-        }
-        // every other interval of the loop
-        // switch the signage and increase the interval
-        if (c%(i*2) == 0) {
-            signage = !signage;
-            i++;
-        }
-        c++;
+    // free stuff
+    for (int i=0;i<b;i++) {
+        free(filled[i]);
     }
-
-    // create the pos object and return it
-    Position pos = safemalloc(sizeof *pos);
-    pos->x = x;
-    pos->y = y;
-    return pos;
+    free(filled);
+    free(posList);
 }
 
 /// leader robot directs tertiary robots next move
