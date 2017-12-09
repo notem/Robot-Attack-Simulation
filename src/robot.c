@@ -90,6 +90,7 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
     Position* posList = safemalloc(k * sizeof *posList);
     while (numPos < k) {
         int currentNum = numPos;
+        int currentPhase = phase;
         Position assignment = safemalloc(sizeof *assignment);
         switch (phase) {
             case 0: // Handles North, South, East and West
@@ -100,7 +101,6 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
                         }
                         assignment->x = leader->target->x;
                         assignment->y = leader->target->y - 1;
-                        printf("North is (%d, %d)\n", assignment->x, assignment->y);
                         numPos++;
                         break;
                     case 1: // South of Target
@@ -109,7 +109,6 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
                         }
                         assignment->x = leader->target->x;
                         assignment->y = leader->target->y + 1;
-                        printf("South is (%d, %d)\n", assignment->x, assignment->y);
                         numPos++;
                         break;
                     case 2: // East of Target
@@ -118,18 +117,15 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
                         }
                         assignment->x = leader->target->x + 1;
                         assignment->y = leader->target->y;
-                        printf("East is (%d, %d)\n", assignment->x, assignment->y);
                         numPos++;
                         break;
                     case 3: // West of Target
                         phase++;    // Move on to diagonals
-                        dir = 0;    // reset direction
                         if (leader->target->x == 0) {
                             break;
                         }
                         assignment->x = leader->target->x - 1;
                         assignment->y = leader->target->y;
-                        printf("West is (%d, %d)\n", assignment->x, assignment->y);
                         numPos++;
                         break;
                     default: // oops, something went wrong!
@@ -138,16 +134,13 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
                 }
                 break;
             case 1: // Handles the four corners (NE, SE, NW, SW)
-                printf("Direction is %d\n", dir);
                 switch (dir) {
                     case 0: // Northeast
-                        printf("case 0?\n");
                         if (leader->target->x == b - 1 || leader->target->y == 0) {
                             break;
                         }
                         assignment->x = leader->target->x + 1;
                         assignment->y = leader->target->y - 1;
-                        printf("Northeast is (%d, %d)\n", assignment->x, assignment->y);
                         numPos++;
                         break;
                     case 1: // Southeast
@@ -156,7 +149,6 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
                         }
                         assignment->x = leader->target->x + 1;
                         assignment->y = leader->target->y + 1;
-                        printf("Southeast is (%d, %d)\n", assignment->x, assignment->y);
                         numPos++;
                         break;
                     case 2: // Northwest
@@ -165,7 +157,6 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
                         }
                         assignment->x = leader->target->x - 1;
                         assignment->y = leader->target->y - 1;
-                        printf("Northwest is (%d, %d)\n", assignment->x, assignment->y);
                         numPos++;
                         break;
                     case 3: // Southwest
@@ -176,7 +167,6 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
                         }
                         assignment->x = leader->target->x - 1;
                         assignment->y = leader->target->y + 1;
-                        printf("Southwest is (%d, %d)\n", assignment->x, assignment->y);
                         numPos++;
                         break;
                     default:    // something went wrong!
@@ -193,8 +183,11 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
                 break;
         }
 
-
-        dir++;  // move onto next direction
+        if (currentPhase == phase) {
+            dir++;  // move onto next direction
+        } else {
+            dir = 0;
+        }
 
         // check if a new position was made
         if (currentNum == numPos) {
