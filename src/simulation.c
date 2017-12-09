@@ -10,39 +10,6 @@ void seed(long seed)  {
     srand(seed); // seed rand
 }
 
-/// Broadcast target location to all other robots
-void broadcastTarget(Robot sender, Robot* robots, size_t k) {
-    for (int i = 0; i < k; i++) {
-        if (robots[i] != sender) {
-            robots[i]->target = sender->target;
-        }
-    }
-}
-
-/// All of the robots verify with the leader that they have the correct target
-/// Checks if a robot is evil
-void verifyTarget(Robot* robots, size_t k) {
-    for (int i = 0; i < k; i++) {
-        for (int j = 0; j < k; j++) {
-            if (robots[j] != robots[i]) {
-
-                if (robots[j]->malicious) {
-                    if (robots[i]->malicious) {
-                        printf("Robot %d(m) verified with Robot %d(m)\n", i, j);
-                    } else {
-                        printf("Robot %d found Robot %d to be malicious!\n", i, j);
-                    }
-                } else if (robots[j]->target == robots[i]->target) {
-                    printf("Robot %d verified with Robot %d\n", i, j);
-                } else {
-                    printf("Uh oh, something went wrong!\n");
-                }
-
-            }
-        }
-    }
-}
-
 /// generate a random position available on the simulation grid
 Position newPos(size_t l, size_t b, size_t k, Position* objects) {
     Position pos = safemalloc(sizeof *pos);
@@ -61,15 +28,6 @@ Position newPos(size_t l, size_t b, size_t k, Position* objects) {
         }
     }
     return pos;
-}
-
-/// elect a leader for the robots using the bully algorithm
-Robot elect_leader(Robot* robots, size_t k) {
-    // Select random robot from list
-    int leadIndex = (int) (rand() % k);
-    printf("  Leader is %d\n", leadIndex);
-    // Choose that as the leader
-    return robots[0];
 }
 
 /// do one turn of the exploration stage
@@ -194,9 +152,9 @@ int run(size_t l, size_t b, size_t k, size_t e, long s) {
     /** Begin the simulation loop **/
     int* phase = safecalloc(1, sizeof *phase);
     int round  = 0;
+    Robot leader = electLeader(robots, k);
     while(*phase >= 0) {    // each loop is a turn in the simulation
         // Elect leader
-        Robot leader = elect_leader(robots, k);
         switch (*phase)
         {
             case 0:     // exploration phase

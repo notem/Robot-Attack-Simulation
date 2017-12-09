@@ -41,4 +41,15 @@ void directMovement(Robot leader, Robot* robots, size_t k, size_t l, size_t b);
 /// robots move in parallel using pthreads
 void moveRobots(Robot* robots, size_t k);
 
+/// have a robot broadcast it's target to all other robots
+void broadcastTarget(Robot sender, Robot* robots, size_t k);
+
+/// elect a leader for the robots using the bully algorithm
+/// the robot with the lowest ID is elected leader
+Robot electLeader(Robot* robots, size_t k);
+
+/// All of the robots verify through consensus that they have the correct target
+/// this function is also used to identify malicious robots
+void verifyTarget(Robot* robots, size_t k);
+
 #endif //CSCI251_PROJECT3_ROBOT_H

@@ -1,7 +1,9 @@
+#include "simulation.h"
 #include <malloc.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <stdint.h>
 #include <stdio.h>
 #include "robot.h"
 #include "pathfinding.h"
@@ -74,11 +76,23 @@ void moveRobots(Robot* robots, size_t k) {
 /// leader robot assigns positions for all robots to go to during the attack phase
 void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, size_t o_size, size_t l, size_t b) {
     // for every malicious robot assign a phony assignment
-    for (int x=0; x<k; x++) {
-        if (robots[x]->malicious) {
-            robots[x]->assignment = safemalloc(sizeof *(robots[x]->assignment));
-            robots[x]->assignment->x = robots[x]->self->x;
-            robots[x]->assignment->y = robots[x]->self->y;
+    int x = (leader->target->x > (b/2) ? 0 : (int) b);
+    int y = (leader->target->y > (l/2) ? 0 : (int) b);
+    int count = 0;
+    for (int j=0; j<k; j++) {
+        if (robots[j]->malicious) {
+            robots[j]->assignment = safemalloc(sizeof *(robots[j]->assignment));
+            robots[j]->assignment->x = y;
+            robots[j]->assignment->y = x;
+
+            // iterate to a new position for next malicious bot
+            if ((count++)%2) {
+                if (leader->target->x > (b/2)) { x++; }
+                else { x--; }
+            } else {
+                if (leader->target->y > (l/2)) { y++; }
+                else { y--; }
+            }
         }
     }
 
@@ -311,23 +325,19 @@ void directMovement(Robot leader, Robot* robots, size_t k, size_t l, size_t b) {
 
         // leader tells each robot their next position
         for (int i = 0; i < k; i++) {
-            if (robots[i]->malicious) {
-                // todo send malicious robots to hell
-            } else {
-                Position pos = shortest_path(next_positions, k+1, robots[i]->self, robots[i]->assignment, l, b);
-                next_positions[i]->x = pos->x;
-                next_positions[i]->y = pos->y;
+            Position pos = shortest_path(next_positions, k+1, robots[i]->self, robots[i]->assignment, l, b);
+            next_positions[i]->x = pos->x;
+            next_positions[i]->y = pos->y;
 
-                // leader prepares the position to send
-                leader->send_buffer->x = pos->x;
-                leader->send_buffer->y = pos->y;
+            // leader prepares the position to send
+            leader->send_buffer->x = pos->x;
+            leader->send_buffer->y = pos->y;
 
-                // leader tells the robot it's next position
-                robots[i]->receive_buffer->x = leader->send_buffer->x;
-                robots[i]->receive_buffer->y = leader->send_buffer->y;
+            // leader tells the robot it's next position
+            robots[i]->receive_buffer->x = leader->send_buffer->x;
+            robots[i]->receive_buffer->y = leader->send_buffer->y;
 
-                free(pos);
-            }
+            free(pos);
         }
 
         // free stuff
@@ -335,5 +345,54 @@ void directMovement(Robot leader, Robot* robots, size_t k, size_t l, size_t b) {
             free(next_positions[i]);
         }
         free(next_positions);
+    }
+}
+
+/// Broadcast target location to all other robots
+void broadcastTarget(Robot sender, Robot* robots, size_t k) {
+    for (int i = 0; i < k; i++) {
+        if (robots[i] != sender) {
+            robots[i]->target = sender->target;
+        }
+    }
+}
+
+/// elect a leader for the robots using the bully algorithm
+Robot electLeader(Robot* robots, size_t k) {
+    // Loop through array of robots to find the lowest robot ID
+    Robot leader = NULL;
+    for (size_t x=0; x<k; x++) {
+        if (leader == NULL) {
+            leader = robots[x];
+        } else if (robots[x]->ID < leader->ID) {
+            leader = robots[x];
+        }
+    }
+    // Choose that as the leader
+    printf("  Leader is %zu\n", leader->ID);
+    return robots[0];
+}
+
+/// All of the robots verify with the leader that they have the correct target
+/// Checks if a robot is evil
+void verifyTarget(Robot* robots, size_t k) {
+    for (int i = 0; i < k; i++) {
+        for (int j = 0; j < k; j++) {
+            if (robots[j] != robots[i]) {
+
+                if (robots[j]->malicious) {
+                    if (robots[i]->malicious) {
+                        printf("Robot %d(m) verified with Robot %d(m)\n", i, j);
+                    } else {
+                        printf("Robot %d found Robot %d to be malicious!\n", i, j);
+                    }
+                } else if (robots[j]->target == robots[i]->target) {
+                    printf("Robot %d verified with Robot %d\n", i, j);
+                } else {
+                    printf("Uh oh, something went wrong!\n");
+                }
+
+            }
+        }
     }
 }

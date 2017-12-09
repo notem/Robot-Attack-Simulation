@@ -4,12 +4,6 @@
 #include "pathfinding.h"
 
 /// finds next batch of neighbors
-/// @param neighbors    pointer to the array of current neighbor nodes
-/// @param visited      pointer to the array of visited nodes
-/// @param s_neighbors  pointer to the size of neighbors array
-/// @param s_visited    pointer to the size of visited array
-/// @param l            height of the simulation grid
-/// @param b            width of the simulation grid
 void find_neighbors(Position** neighbors, Position** visited, size_t* s_neighbors, size_t* s_visited, size_t l, size_t b) {
     /* add neighbors to visited nodes */
     *s_visited += *s_neighbors;
