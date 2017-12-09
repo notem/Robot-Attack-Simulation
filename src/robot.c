@@ -100,6 +100,7 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
                         }
                         assignment->x = leader->target->x;
                         assignment->y = leader->target->y - 1;
+                        printf("North is (%d, %d)\n", assignment->x, assignment->y);
                         numPos++;
                         break;
                     case 1: // South of Target
@@ -108,6 +109,7 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
                         }
                         assignment->x = leader->target->x;
                         assignment->y = leader->target->y + 1;
+                        printf("South is (%d, %d)\n", assignment->x, assignment->y);
                         numPos++;
                         break;
                     case 2: // East of Target
@@ -116,6 +118,7 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
                         }
                         assignment->x = leader->target->x + 1;
                         assignment->y = leader->target->y;
+                        printf("East is (%d, %d)\n", assignment->x, assignment->y);
                         numPos++;
                         break;
                     case 3: // West of Target
@@ -126,6 +129,7 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
                         }
                         assignment->x = leader->target->x - 1;
                         assignment->y = leader->target->y;
+                        printf("West is (%d, %d)\n", assignment->x, assignment->y);
                         numPos++;
                         break;
                     default: // oops, something went wrong!
@@ -134,24 +138,69 @@ void assignPositions(Robot leader, Robot* robots, size_t k, Position* objects, s
                 }
                 break;
             case 1: // Handles the four corners (NE, SE, NW, SW)
-                printf("Probably don't need this right now");
-                // TODO
+                printf("Direction is %d\n", dir);
+                switch (dir) {
+                    case 0: // Northeast
+                        printf("case 0?\n");
+                        if (leader->target->x == b - 1 || leader->target->y == 0) {
+                            break;
+                        }
+                        assignment->x = leader->target->x + 1;
+                        assignment->y = leader->target->y - 1;
+                        printf("Northeast is (%d, %d)\n", assignment->x, assignment->y);
+                        numPos++;
+                        break;
+                    case 1: // Southeast
+                        if (leader->target->x == b - 1 || leader->target->y == l - 1) {
+                            break;
+                        }
+                        assignment->x = leader->target->x + 1;
+                        assignment->y = leader->target->y + 1;
+                        printf("Southeast is (%d, %d)\n", assignment->x, assignment->y);
+                        numPos++;
+                        break;
+                    case 2: // Northwest
+                        if (leader->target->x == 0 || leader->target->y == 0) {
+                            break;
+                        }
+                        assignment->x = leader->target->x - 1;
+                        assignment->y = leader->target->y - 1;
+                        printf("Northwest is (%d, %d)\n", assignment->x, assignment->y);
+                        numPos++;
+                        break;
+                    case 3: // Southwest
+                        phase++;
+                        dir = 0;
+                        if (leader->target->x == 0 || leader->target->y == l - 1) {
+                            break;
+                        }
+                        assignment->x = leader->target->x - 1;
+                        assignment->y = leader->target->y + 1;
+                        printf("Southwest is (%d, %d)\n", assignment->x, assignment->y);
+                        numPos++;
+                        break;
+                    default:    // something went wrong!
+                        assert(NULL);
+                        break;
+                }
                 break;
             case 2: // Handles the second layer onward if applicable
-                printf("What you doing here?");
+                //printf("What you doing here?");
                 // TODO
                 break;
             default: // oops, something went wrong!
                 assert(NULL);
                 break;
         }
+
+
         dir++;  // move onto next direction
 
         // check if a new position was made
         if (currentNum == numPos) {
             free(assignment);
         } else {
-            posList[numPos] = assignment;
+            posList[numPos - 1] = assignment;
         }
     }
     ////// ^ This code ^ //////////
